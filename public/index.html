@@ -1,252 +1,907 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FitScan AI - Quét Dinh Dưỡng Thông Minh</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0B0F17">
+  <title>FitScan AI - Camera Quét Dinh Dưỡng & Món Ăn Cho Gymer</title>
+
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            gymDark: '#0B0F17',
+            gymPanel: '#111827',
+            gymCard: '#1F2937',
+            neonGreen: '#10B981',
+            neonCyan: '#06B6D4',
+            neonAmber: '#F59E0B',
+            neonRose: '#F43F5E',
+            neonPurple: '#8B5CF6'
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    @keyframes scanLine {
+      0% { top: 0%; opacity: 0.8; }
+      50% { top: 95%; opacity: 1; }
+      100% { top: 0%; opacity: 0.8; }
+    }
+    .animate-scan-line { animation: scanLine 2.5s ease-in-out infinite; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .glass-panel {
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    button, label, select, a { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    @media (max-width: 639px) {
+      input, select, textarea { font-size: 16px !important; }
+      .glass-panel { backdrop-filter: none; background: rgba(17, 24, 39, 0.96); }
+    }
+  </style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-800 min-h-screen flex flex-col">
+<body class="bg-gymDark text-gray-100 font-sans min-h-[100dvh] flex flex-col antialiased selection:bg-neonGreen selection:text-black">
 
   <!-- Header -->
-  <header class="bg-emerald-600 text-white p-4 shadow-md sticky top-0 z-50">
-    <div class="max-w-xl mx-auto flex justify-between items-center">
-      <h1 class="text-xl font-bold flex items-center gap-2">
-        <i class="fa-solid fa-camera-retro"></i> FitScan AI
-      </h1>
-      <span class="text-xs bg-emerald-700 px-2.5 py-1 rounded-full font-medium">v2.0 Connected</span>
+  <header class="sticky top-0 z-40 bg-gymPanel/90 backdrop-blur-md border-b border-gray-800 px-3 sm:px-4 py-2.5 sm:py-3 shadow-lg">
+    <div class="max-w-7xl mx-auto flex flex-nowrap justify-between items-center gap-2 sm:gap-3">
+      <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-gradient-to-br from-neonGreen to-neonCyan flex items-center justify-center text-gymDark text-xl font-black shadow-lg shadow-neonGreen/20">
+          <i class="fa-solid fa-camera-retro"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="font-extrabold text-base sm:text-lg md:text-xl tracking-tight whitespace-nowrap bg-gradient-to-r from-neonGreen via-neonCyan to-white bg-clip-text text-transparent">
+              FITSCAN AI
+            </h1>
+            <span class="hidden sm:inline-block bg-neonGreen/20 text-neonGreen border border-neonGreen/30 text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full">
+              Cloud Engine Active
+            </span>
+          </div>
+          <p class="hidden sm:block text-xs text-gray-400">Camera Quét Dinh Dưỡng &amp; Đo lường Calo</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2 md:space-x-4 shrink-0">
+        <div class="flex items-center bg-gymCard border border-gray-800 rounded-lg px-2 sm:px-3 h-10 sm:h-auto sm:py-1.5 text-[11px] sm:text-xs text-gray-300 space-x-3 whitespace-nowrap">
+          <div><i class="fa-solid fa-fire text-neonRose mr-1"></i> <span id="headerCalories">0</span> / <span id="headerCalorieTarget">2200</span> kcal</div>
+          <div class="hidden sm:block text-gray-600">|</div>
+          <div class="hidden sm:block"><i class="fa-solid fa-drumstick-bite text-neonCyan mr-1"></i> <span id="headerProtein">0</span>g Prot</div>
+        </div>
+      </div>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="max-w-xl mx-auto w-full p-4 flex-1 flex flex-col gap-5">
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 pb-28 sm:pb-5 flex flex-col space-y-5 sm:space-y-6">
 
-    <!-- Camera / Image Upload Section -->
-    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
-      <h2 class="text-lg font-bold mb-3 flex items-center gap-2 text-gray-700">
-        <i class="fa-solid fa-expand text-emerald-600"></i> Quét món ăn / Chọn ảnh
-      </h2>
-
-      <!-- Viewport Display -->
-      <div class="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center mb-4 border">
-        <!-- Live Webcam Video -->
-        <video id="webcamVideo" autoplay playsinline class="w-full h-full object-cover hidden"></video>
-        
-        <!-- Image Preview -->
-        <img id="imagePreview" class="w-full h-full object-cover hidden" alt="Ảnh xem trước">
-
-        <!-- Initial Placeholder -->
-        <div id="placeholderText" class="text-center text-gray-400 p-4">
-          <i class="fa-solid fa-cloud-arrow-up text-4xl mb-2"></i>
-          <p class="text-sm">Mở camera hoặc tải ảnh món ăn lên</p>
-        </div>
-
-        <!-- Camera Error Alert Box -->
-        <div id="camError" class="absolute inset-0 bg-gray-900/90 text-white p-4 text-center flex flex-col items-center justify-center hidden">
-          <i class="fa-solid fa-triangle-exclamation text-yellow-400 text-3xl mb-2"></i>
-          <p id="camErrorText" class="text-xs text-gray-300"></p>
-        </div>
-      </div>
-
-      <!-- Control Buttons -->
-      <div class="grid grid-cols-2 gap-3 mb-3">
-        <button onclick="startCamera()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-sm transition">
-          <i class="fa-solid fa-video"></i> Bật Camera
-        </button>
-        
-        <label class="bg-gray-800 hover:bg-gray-900 text-white font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm transition text-center">
-          <i class="fa-solid fa-image"></i> Chọn ảnh
-          <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
-        </label>
-      </div>
-
-      <button id="analyzeBtn" onclick="analyzeFoodImage()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow transition disabled:opacity-50" disabled>
-        <i class="fa-solid fa-wand-magic-sparkles"></i> Phân Tích Dinh Dưỡng
+    <!-- Navigation Tabs -->
+    <nav id="mainNav" class="fixed bottom-0 inset-x-0 z-40 flex justify-around gap-1 px-1.5 pt-1.5 bg-gymPanel/95 backdrop-blur-md border-t border-gray-800 sm:static sm:z-auto sm:justify-start sm:overflow-x-auto sm:gap-2 sm:p-1.5 sm:bg-gymPanel sm:rounded-2xl sm:border no-scrollbar">
+      <button onclick="switchTab('cameraTab')" id="tab-cameraTab" class="tab-btn active flex-1 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 sm:px-3 lg:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all whitespace-nowrap bg-neonGreen text-gymDark shadow-md">
+        <i class="fa-solid fa-camera"></i>
+        <span>Quét AI</span>
       </button>
-    </div>
+      <button onclick="switchTab('libraryTab')" id="tab-libraryTab" class="tab-btn flex-1 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 sm:px-3 lg:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all whitespace-nowrap text-gray-400 hover:text-white hover:bg-gymCard">
+        <i class="fa-solid fa-utensils"></i>
+        <span>Thư viện món</span>
+      </button>
+      <button onclick="switchTab('diaryTab')" id="tab-diaryTab" class="tab-btn flex-1 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 sm:px-3 lg:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all whitespace-nowrap text-gray-400 hover:text-white hover:bg-gymCard">
+        <i class="fa-solid fa-book-journal-whills"></i>
+        <span>Nhật ký</span>
+      </button>
+      <button onclick="switchTab('bmrTab')" id="tab-bmrTab" class="tab-btn flex-1 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 px-1 sm:px-3 lg:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold transition-all whitespace-nowrap text-gray-400 hover:text-white hover:bg-gymCard">
+        <i class="fa-solid fa-calculator"></i>
+        <span>BMR / TDEE</span>
+      </button>
+    </nav>
 
-    <!-- Quick Sample Buttons (Test Khẩn Cấp) -->
-    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
-      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-        Hoặc dùng thử món mẫu nhanh:
-      </h3>
-      <div class="flex flex-wrap gap-2">
-        <button onclick="selectSample('Pho Bo')" class="text-xs bg-emerald-50 text-emerald-700 font-medium px-3 py-2 rounded-lg border border-emerald-200 hover:bg-emerald-100">
-          🍜 Phở Bò
-        </button>
-        <button onclick="selectSample('Com Tam')" class="text-xs bg-emerald-50 text-emerald-700 font-medium px-3 py-2 rounded-lg border border-emerald-200 hover:bg-emerald-100">
-          🍚 Cơm Tấm
-        </button>
-        <button onclick="selectSample('Ga Luoc')" class="text-xs bg-emerald-50 text-emerald-700 font-medium px-3 py-2 rounded-lg border border-emerald-200 hover:bg-emerald-100">
-          🍗 Gà Luộc
-        </button>
+    <!-- TAB 1: Camera Scan -->
+    <section id="cameraTab" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="lg:col-span-7 flex flex-col space-y-4">
+        <div class="relative w-full aspect-[3/4] max-h-[72dvh] sm:max-h-[78dvh] sm:aspect-[16/10] bg-black rounded-3xl overflow-hidden border-2 border-gray-800 shadow-2xl flex items-center justify-center group">
+          <video id="webcamVideo" autoplay playsinline muted class="w-full h-full object-cover"></video>
+          <img id="imagePreview" class="hidden w-full h-full object-cover" alt="Ảnh tải lên">
+          
+          <div id="camError" class="hidden absolute inset-0 z-10 flex flex-col items-center justify-center text-center p-6 pb-24 space-y-3 bg-black/85">
+            <i class="fa-solid fa-video-slash text-3xl text-neonAmber"></i>
+            <p id="camErrorText" class="text-xs text-gray-300 leading-relaxed">Không thể truy cập camera. Bạn có thể chọn ảnh từ thiết bị.</p>
+            <label for="nativeCameraInput" class="pointer-events-auto cursor-pointer px-4 py-2.5 bg-neonGreen text-gymDark font-bold text-xs rounded-full">
+              <i class="fa-solid fa-camera mr-1"></i> Mở camera máy
+              <input type="file" id="nativeCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
+            </label>
+          </div>
+
+          <div id="scannerOverlay" class="absolute inset-0 pointer-events-none border-[6px] sm:border-[12px] border-black/40 flex flex-col justify-between p-3 sm:p-4">
+            <div class="flex justify-between items-start text-xs font-mono">
+              <span class="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded text-neonGreen border border-neonGreen/30 flex items-center space-x-1">
+                <span class="w-2 h-2 rounded-full bg-neonGreen animate-ping mr-1"></span>
+                <span>SYSTEM ONLINE</span>
+              </span>
+            </div>
+            <div class="relative w-48 h-48 sm:w-64 sm:h-64 mx-auto border-2 border-dashed border-neonGreen/60 rounded-2xl flex items-center justify-center">
+              <div id="laserLine" class="hidden absolute left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-neonGreen to-transparent shadow-[0_0_15px_#10B981] animate-scan-line"></div>
+              <div class="text-[10px] text-neonGreen/70 font-mono tracking-widest text-center uppercase">Đặt món ăn vào khung hình</div>
+            </div>
+            <div class="hidden sm:block text-right text-[10px] font-mono text-neonCyan/80 bg-black/50 px-2 py-0.5 rounded self-end">
+              FITSCAN_CLOUD_v3.2
+            </div>
+          </div>
+
+          <div class="absolute bottom-3 sm:bottom-4 left-0 right-0 px-3 sm:px-4 flex justify-center items-center space-x-2 sm:space-x-3 z-20">
+            <button onclick="toggleCamera()" title="Đổi camera" class="w-12 h-12 shrink-0 flex items-center justify-center bg-black/60 hover:bg-black text-white rounded-full border border-gray-700 backdrop-blur-md">
+              <i class="fa-solid fa-camera-rotate"></i>
+            </button>
+            <button onclick="captureAndScan()" id="scanBtn" class="px-6 py-3.5 bg-gradient-to-r from-neonGreen to-neonCyan text-gymDark font-black text-xs sm:text-sm whitespace-nowrap rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center space-x-2">
+              <i class="fa-solid fa-bolt text-base"></i>
+              <span>CHỤP &amp; QUÉT AI</span>
+            </button>
+            <label for="fileInput" class="h-12 min-w-[3rem] px-4 bg-black/60 hover:bg-black text-white text-xs font-semibold rounded-full border border-gray-700 backdrop-blur-md cursor-pointer flex items-center justify-center space-x-2">
+              <i class="fa-regular fa-image text-neonCyan"></i>
+              <span class="hidden sm:inline">Chọn ảnh</span>
+              <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+            </label>
+          </div>
+        </div>
+
+        <div class="glass-panel p-3 rounded-2xl flex flex-col space-y-2">
+          <div class="flex justify-between items-center text-xs text-gray-400">
+            <span><i class="fa-solid fa-fire-flame-curved text-neonAmber mr-1"></i> Quét nhanh món mẫu:</span>
+          </div>
+          <div class="flex overflow-x-auto space-x-2 py-1 no-scrollbar">
+            <button onclick="simulateScan('Gà Luộc')" class="px-3 py-2 bg-gymCard hover:bg-gymCard/80 border border-gray-700 text-xs rounded-xl whitespace-nowrap shrink-0">🍗 Gà Luộc Lá Chanh</button>
+            <button onclick="simulateScan('Rau Muống')" class="px-3 py-2 bg-gymCard hover:bg-gymCard/80 border border-gray-700 text-xs rounded-xl whitespace-nowrap shrink-0">🥬 Rau Muống Xào Tỏi</button>
+            <button onclick="simulateScan('Bò Lúc Lắc')" class="px-3 py-2 bg-gymCard hover:bg-gymCard/80 border border-gray-700 text-xs rounded-xl whitespace-nowrap shrink-0">🥩 Bò Lúc Lắc</button>
+            <button onclick="simulateScan('Phở Bò')" class="px-3 py-2 bg-gymCard hover:bg-gymCard/80 border border-gray-700 text-xs rounded-xl whitespace-nowrap shrink-0">🍜 Phở Bò Tái</button>
+            <button onclick="simulateScan('Cơm Tấm')" class="px-3 py-2 bg-gymCard hover:bg-gymCard/80 border border-gray-700 text-xs rounded-xl whitespace-nowrap shrink-0">🍚 Cơm Tấm Sườn Bì</button>
+            <button onclick="simulateScan('Ức Gà')" class="px-3 py-2 bg-gymCard hover:bg-gymCard/80 border border-gray-700 text-xs rounded-xl whitespace-nowrap shrink-0">🥦 Ức Gà Áp Chảo</button>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- Results Display Section -->
-    <div id="resultBox" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 hidden">
-      <h2 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4 flex items-center gap-2">
-        <i class="fa-solid fa-chart-pie text-emerald-600"></i> Kết Quả Phân Tích
-      </h2>
-      
-      <div id="loadingSpinner" class="text-center py-8 hidden">
-        <i class="fa-solid fa-spinner fa-spin text-3xl text-emerald-600 mb-2"></i>
-        <p class="text-sm text-gray-500 font-medium">AI đang phân tích khẩu phần ăn...</p>
+      <!-- AI Result Panel -->
+      <div class="lg:col-span-5 flex flex-col justify-between">
+        <div class="glass-panel p-4 sm:p-5 rounded-3xl border border-gray-800 h-full flex flex-col justify-between space-y-4">
+          <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+            <div class="flex items-center space-x-2">
+              <i class="fa-solid fa-microchip text-neonGreen text-lg"></i>
+              <h2 class="font-bold text-base text-gray-200">KẾT QUẢ PHÂN TÍCH AI</h2>
+            </div>
+            <span id="scanStatusBadge" class="bg-gray-800 text-gray-400 text-xs px-2.5 py-1 rounded-full border border-gray-700">
+              Sẵn sàng quét
+            </span>
+          </div>
+
+          <div id="scanResultContainer" class="flex-1 flex flex-col justify-center space-y-4">
+            <div id="scanPlaceholder" class="text-center py-10 text-gray-500 space-y-3">
+              <div class="w-16 h-16 mx-auto rounded-full bg-gymCard border border-gray-800 flex items-center justify-center text-2xl text-neonGreen">
+                <i class="fa-solid fa-expand"></i>
+              </div>
+              <p id="scanPlaceholderMessage" class="text-sm">Hướng camera vào món ăn hoặc tải ảnh lên, sau đó bấm <br><span class="text-neonGreen font-semibold">"Chụp &amp; Quét AI"</span></p>
+            </div>
+
+            <div id="tfRecognitionNotice" class="hidden p-3 rounded-xl bg-neonCyan/10 border border-neonCyan/30 text-xs space-y-1">
+              <p class="font-semibold text-neonCyan" id="tfNoticeTitle">Gemini Cloud Engine nhận diện</p>
+              <p id="tfRecognitionLabel" class="text-gray-200"></p>
+              <p id="tfRecognitionConfidence" class="text-gray-400"></p>
+            </div>
+
+            <div id="scanContent" class="hidden space-y-4">
+              <div class="flex items-center space-x-4">
+                <img id="scannedFoodImage" src="" alt="Món quét" class="w-20 h-20 rounded-2xl object-cover border border-gray-700 shadow-md">
+                <div class="flex-1">
+                  <span id="scannedFoodCategory" class="text-[10px] uppercase font-bold text-neonGreen bg-neonGreen/10 border border-neonGreen/30 px-2 py-0.5 rounded-md">Món Ăn Việt Nam</span>
+                  <h3 id="scannedFoodName" class="text-xl font-black text-white mt-1">Tên Món Ăn</h3>
+                  <p id="scannedFoodServing" class="text-xs text-gray-400">Khẩu phần: ~150g (1 phần standard)</p>
+                </div>
+              </div>
+
+              <!-- Portion Selector -->
+              <div class="flex items-center justify-between text-xs bg-gymCard p-2.5 rounded-2xl border border-gray-800">
+                <span class="font-semibold text-gray-300"><i class="fa-solid fa-scale-balanced text-neonAmber mr-1"></i> Điều chỉnh khẩu phần:</span>
+                <select id="portionSelect" onchange="applyPortion()" class="bg-gymDark border border-gray-700 rounded-lg px-2 py-1 text-gray-100 font-semibold focus:border-neonGreen">
+                  <option value="0.7">Ít (×0.7)</option>
+                  <option value="1" selected>Vừa (×1.0)</option>
+                  <option value="1.3">Nhiều (×1.3)</option>
+                  <option value="1.5">Rất nhiều (×1.5)</option>
+                </select>
+              </div>
+
+              <!-- Macros Breakdown -->
+              <div class="grid grid-cols-4 gap-2 text-center">
+                <div class="bg-gymCard p-2.5 rounded-2xl border border-gray-800">
+                  <span class="block text-[10px] text-gray-400 uppercase font-semibold">Calo</span>
+                  <span id="scannedCal" class="text-base font-black text-neonRose">0</span>
+                  <span class="text-[9px] text-gray-500">kcal</span>
+                </div>
+                <div class="bg-gymCard p-2.5 rounded-2xl border border-gray-800">
+                  <span class="block text-[10px] text-gray-400 uppercase font-semibold">Protein</span>
+                  <span id="scannedProtein" class="text-base font-black text-neonCyan">0</span>
+                  <span class="text-[9px] text-gray-500">g</span>
+                </div>
+                <div class="bg-gymCard p-2.5 rounded-2xl border border-gray-800">
+                  <span class="block text-[10px] text-gray-400 uppercase font-semibold">Carbs</span>
+                  <span id="scannedCarbs" class="text-base font-black text-neonAmber">0</span>
+                  <span class="text-[9px] text-gray-500">g</span>
+                </div>
+                <div class="bg-gymCard p-2.5 rounded-2xl border border-gray-800">
+                  <span class="block text-[10px] text-gray-400 uppercase font-semibold">Fat</span>
+                  <span id="scannedFat" class="text-base font-black text-purple-400">0</span>
+                  <span class="text-[9px] text-gray-500">g</span>
+                </div>
+              </div>
+
+              <!-- Cheat Meal & Oil Level Advice Box -->
+              <div id="cheatMealBox" class="p-3.5 rounded-2xl bg-neonAmber/10 border border-neonAmber/30 flex items-start space-x-3">
+                <div class="p-2 bg-neonAmber/20 rounded-xl text-neonAmber text-lg shrink-0">
+                  <i class="fa-solid fa-lightbulb"></i>
+                </div>
+                <div class="text-xs space-y-1 flex-1">
+                  <div class="flex justify-between items-center font-bold text-neonAmber">
+                    <span>GÓP Ý &amp; ĐÁNH GIÁ DINH DƯỠNG</span>
+                    <span id="oilRatingText" class="text-[11px] bg-neonAmber/20 px-2 py-0.5 rounded text-amber-200">Dầu mỡ: Vừa</span>
+                  </div>
+                  <p id="cheatMealAdvice" class="text-gray-300 leading-relaxed">Cân bằng dinh dưỡng tốt.</p>
+                  <p id="burnoutAdvice" class="text-neonCyan font-semibold pt-1"><i class="fa-solid fa-person-running mr-1"></i> Gợi ý tiêu hao: 25 phút đi bộ.</p>
+                </div>
+              </div>
+
+              <!-- Action Button -->
+              <div class="pt-2 flex gap-2">
+                <button onclick="addScannedToDiary()" class="flex-1 py-3 px-4 bg-neonGreen hover:bg-emerald-400 text-gymDark font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2">
+                  <i class="fa-solid fa-plus-circle"></i>
+                  <span>Thêm Vào Nhật Ký Bữa Ăn</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: Library -->
+    <section id="libraryTab" class="tab-content hidden space-y-5">
+      <div class="glass-panel p-4 rounded-3xl border border-gray-800 flex flex-col md:flex-row gap-3 justify-between items-center">
+        <div class="relative w-full md:w-80">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-gray-500 text-xs"></i>
+          <input type="text" id="librarySearchInput" oninput="renderLibrary()" placeholder="Tìm tên món ăn (ví dụ: Gà, Bò, Phở...)" class="w-full bg-gymCard border border-gray-700 rounded-xl pl-9 pr-4 py-2.5 text-xs text-gray-200 focus:outline-none focus:border-neonGreen">
+        </div>
+        <div class="flex gap-2 overflow-x-auto w-full md:w-auto no-scrollbar">
+          <button onclick="filterLibrary('all')" class="lib-filter-btn active px-3 py-1.5 bg-neonGreen text-gymDark text-xs font-bold rounded-xl whitespace-nowrap">Tất cả</button>
+          <button onclick="filterLibrary('meat')" class="lib-filter-btn px-3 py-1.5 bg-gymCard hover:bg-gray-800 text-gray-300 text-xs font-bold rounded-xl whitespace-nowrap">Thịt / Đạm</button>
+          <button onclick="filterLibrary('veg')" class="lib-filter-btn px-3 py-1.5 bg-gymCard hover:bg-gray-800 text-gray-300 text-xs font-bold rounded-xl whitespace-nowrap">Rau củ</button>
+          <button onclick="filterLibrary('gym')" class="lib-filter-btn px-3 py-1.5 bg-gymCard hover:bg-gray-800 text-gray-300 text-xs font-bold rounded-xl whitespace-nowrap">Món Gymer</button>
+        </div>
+      </div>
+      <div id="libraryFoodGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+    </section>
+
+    <!-- TAB 3: Diary -->
+    <section id="diaryTab" class="tab-content hidden space-y-6">
+      <div class="glass-panel p-4 sm:p-5 rounded-3xl border border-gray-800 space-y-5">
+        <div class="flex justify-between items-center">
+          <h2 class="text-lg font-bold text-gray-100 flex items-center space-x-2">
+            <i class="fa-solid fa-chart-pie text-neonGreen"></i>
+            <span>NHẬT KÝ BỮA ĂN HÔM NAY</span>
+          </h2>
+          <button onclick="clearDiary()" class="text-xs text-neonRose hover:underline"><i class="fa-solid fa-trash mr-1"></i> Xóa tất cả</button>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="bg-gymCard p-3 rounded-2xl border border-gray-800"><span class="block text-[10px] text-gray-400">TỔNG CALO</span><span id="diaryCalText" class="text-base font-black text-neonRose">0 / 2200 kcal</span></div>
+          <div class="bg-gymCard p-3 rounded-2xl border border-gray-800"><span class="block text-[10px] text-gray-400">PROTEIN</span><span id="diaryProteinText" class="text-base font-black text-neonCyan">0 / 140g</span></div>
+          <div class="bg-gymCard p-3 rounded-2xl border border-gray-800"><span class="block text-[10px] text-gray-400">CARBS</span><span id="diaryCarbsText" class="text-base font-black text-neonAmber">0 / 250g</span></div>
+          <div class="bg-gymCard p-3 rounded-2xl border border-gray-800"><span class="block text-[10px] text-gray-400">FAT</span><span id="diaryFatText" class="text-base font-black text-purple-400">0 / 60g</span></div>
+        </div>
       </div>
 
-      <div id="analysisContent" class="space-y-4"></div>
-    </div>
+      <div class="space-y-4">
+        <div class="glass-panel p-4 rounded-3xl space-y-3">
+          <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+            <h3 class="font-bold text-sm text-neonGreen"><i class="fa-solid fa-sun mr-2"></i> Bữa Sáng</h3>
+            <span id="cal-breakfast" class="text-xs font-bold text-gray-400">0 kcal</span>
+          </div>
+          <div id="mealList-breakfast" class="space-y-2 text-xs text-gray-500 italic">Chưa có món ăn nào</div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-3xl space-y-3">
+          <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+            <h3 class="font-bold text-sm text-neonCyan"><i class="fa-solid fa-cloud-sun mr-2"></i> Bữa Trưa</h3>
+            <span id="cal-lunch" class="text-xs font-bold text-gray-400">0 kcal</span>
+          </div>
+          <div id="mealList-lunch" class="space-y-2 text-xs text-gray-500 italic">Chưa có món ăn nào</div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-3xl space-y-3">
+          <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+            <h3 class="font-bold text-sm text-neonAmber"><i class="fa-solid fa-moon mr-2"></i> Bữa Tối</h3>
+            <span id="cal-dinner" class="text-xs font-bold text-gray-400">0 kcal</span>
+          </div>
+          <div id="mealList-dinner" class="space-y-2 text-xs text-gray-500 italic">Chưa có món ăn nào</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: BMR Calculator -->
+    <section id="bmrTab" class="tab-content hidden space-y-5">
+      <div class="glass-panel p-5 rounded-3xl border border-gray-800 space-y-4 max-w-xl mx-auto">
+        <h2 class="text-lg font-extrabold text-white flex items-center space-x-2">
+          <i class="fa-solid fa-calculator text-neonGreen"></i>
+          <span>TÍNH BMR &amp; TDEE CÁ NHÂN</span>
+        </h2>
+        <p class="text-xs text-gray-400">Công thức Mifflin-St Jeor chuẩn xác tính toán lượng calo đốt cháy mỗi ngày.</p>
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Giới tính</label>
+            <select id="bmrGender" class="w-full bg-gymCard border border-gray-700 rounded-xl p-2.5 text-xs text-white">
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Tuổi</label>
+            <input type="number" id="bmrAge" value="22" class="w-full bg-gymCard border border-gray-700 rounded-xl p-2.5 text-xs text-white">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Chiều cao (cm)</label>
+            <input type="number" id="bmrHeight" value="170" class="w-full bg-gymCard border border-gray-700 rounded-xl p-2.5 text-xs text-white">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Cân nặng (kg)</label>
+            <input type="number" id="bmrWeight" value="65" class="w-full bg-gymCard border border-gray-700 rounded-xl p-2.5 text-xs text-white">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-300 mb-1">Cường độ vận động</label>
+          <select id="bmrActivity" class="w-full bg-gymCard border border-gray-700 rounded-xl p-2.5 text-xs text-white">
+            <option value="1.2">Ít vận động (Dân văn phòng)</option>
+            <option value="1.375">Tập nhẹ (1-3 buổi/tuần)</option>
+            <option value="1.55" selected>Tập vừa (3-5 buổi/tuần)</option>
+            <option value="1.725">Tập nặng (6-7 buổi/tuần)</option>
+          </select>
+        </div>
+
+        <button onclick="calculateBMR()" class="w-full py-3 bg-neonGreen hover:bg-emerald-400 text-gymDark font-extrabold text-xs rounded-xl shadow-lg transition-all">
+          TÍNH TOÁN NGAY
+        </button>
+
+        <div id="bmrResultBox" class="hidden p-4 rounded-2xl bg-gymCard border border-gray-700 space-y-2 text-center">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <span class="block text-[10px] text-gray-400">BMR (Calo tối thiểu)</span>
+              <span id="resBMR" class="text-lg font-black text-neonCyan">0</span> <span class="text-xs">kcal</span>
+            </div>
+            <div>
+              <span class="block text-[10px] text-gray-400">TDEE (Calo tiêu thụ)</span>
+              <span id="resTDEE" class="text-lg font-black text-neonRose">0</span> <span class="text-xs">kcal</span>
+            </div>
+          </div>
+          <button onclick="applyTDEEToTarget()" class="w-full py-2 mt-2 bg-neonCyan/20 text-neonCyan border border-neonCyan/30 text-xs font-bold rounded-xl">
+            Đặt TDEE này làm mục tiêu Calo hàng ngày
+          </button>
+        </div>
+      </div>
+    </section>
 
   </main>
 
   <script>
-    let currentStream = null;
-    let selectedBase64Image = null;
+    let webcamStream = null;
+    let currentCameraFacing = 'environment';
+    let selectedScannedFood = null;
+    let scannedBaseFood = null;
+    let currentFilterCategory = 'all';
+    let diaryEntries = [];
+    let userCalorieTarget = 2200;
 
-    // Helper Display Functions
-    function showElement(id) { document.getElementById(id)?.classList.remove('hidden'); }
-    function hideElement(id) { document.getElementById(id)?.classList.add('hidden'); }
+    // === DANH SÁCH MÓN ĂN VIỆT NAM ĐẦY ĐỦ THÔNG SỐ & LỜI KHUYÊN GÓP Ý ===
+    let FOOD_DATABASE = [
+      {
+        id: 'v1',
+        name: 'Rau Muống Xào Tỏi',
+        category: 'veg',
+        calories: 120,
+        protein: 3,
+        carbs: 8,
+        fat: 8,
+        serving: '1 dĩa (150g)',
+        img: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=500',
+        cheatAlert: false,
+        oilLevel: 'Vừa',
+        cheatNote: 'Rau muống giàu chất xơ và Vitamin K. Lượng dầu mỡ ở mức vừa phải, rất phù hợp dằn bụng.',
+        burnout: '15 phút đi bộ nhẹ nhàng.'
+      },
+      {
+        id: 'm1',
+        name: 'Gà Luộc Lá Chanh',
+        category: 'meat',
+        calories: 230,
+        protein: 32,
+        carbs: 1,
+        fat: 11,
+        serving: '1 phần (180g)',
+        img: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=500',
+        cheatAlert: false,
+        oilLevel: 'Rất Thấp',
+        cheatNote: 'Món ăn tuyệt vời cho Gymer! Hàm lượng đạm rất cao, không qua chiên xào dầu mỡ.',
+        burnout: 'Hỗ trợ phục hồi cơ bắp tối ưu.'
+      },
+      {
+        id: 'm3',
+        name: 'Bò Lúc Lắc',
+        category: 'meat',
+        calories: 380,
+        protein: 34,
+        carbs: 12,
+        fat: 22,
+        serving: '1 đĩa (200g)',
+        img: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=500',
+        cheatAlert: false,
+        oilLevel: 'Vừa - Cao',
+        cheatNote: 'Thịt bò giàu sắt và Creatine tự nhiên. Lượng dầu xào hơi cao, nên ăn kèm nhiều rau xà lách.',
+        burnout: '40 phút tập tạ kháng lực.'
+      },
+      {
+        id: 'n1',
+        name: 'Phở Bò Tái',
+        category: 'meat',
+        calories: 430,
+        protein: 26,
+        carbs: 58,
+        fat: 11,
+        serving: '1 tô vừa',
+        img: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=500',
+        cheatAlert: false,
+        oilLevel: 'Vừa',
+        cheatNote: 'Bánh phở cung cấp Carbs phục hồi năng lượng sau tập. Nên hạn chế húp hết nước dùng để tránh nạp nhiều gia vị natri.',
+        burnout: '35 phút đi bộ hoặc đạp xe.'
+      },
+      {
+        id: 'n2',
+        name: 'Cơm Tấm Sườn Bì Chả',
+        category: 'meat',
+        calories: 780,
+        protein: 35,
+        carbs: 95,
+        fat: 28,
+        serving: '1 dĩa đầy đủ',
+        img: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=500',
+        cheatAlert: true,
+        oilLevel: 'Rất Cao',
+        cheatNote: 'Món ăn có lượng Calo và Fat rất lớn từ mỡ hành và sườn nướng. Nên xin ít mỡ hành để kiểm soát cân nặng.',
+        burnout: '60 phút chạy bộ hoặc cardio cường độ cao.'
+      },
+      {
+        id: 'g1',
+        name: 'Ức Gà Áp Chảo Rau Củ',
+        category: 'gym',
+        calories: 280,
+        protein: 42,
+        carbs: 10,
+        fat: 6,
+        serving: '1 phần (200g)',
+        img: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=500',
+        cheatAlert: false,
+        oilLevel: 'Rất Thấp',
+        cheatNote: 'Món ăn chuẩn mực cho siết cơ (Cutting). Đạm siêu cao, tinh bột thấp và hầu như không có mỡ xấu.',
+        burnout: 'Đốt mỡ tự nhiên hiệu quả.'
+      },
+      {
+        id: 'v2',
+        name: 'Canh Chua Cá Lóc',
+        category: 'veg',
+        calories: 190,
+        protein: 18,
+        carbs: 14,
+        fat: 5,
+        serving: '1 tô (250ml)',
+        img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=500',
+        cheatAlert: false,
+        oilLevel: 'Thấp',
+        cheatNote: 'Thanh nhiệt, ít calo, giàu chất xơ từ đậu okra, giá đỗ và bạc hà. Rất tốt cho hệ tiêu hóa.',
+        burnout: '20 phút đi bộ nhẹ.'
+      },
+      {
+        id: 'm2',
+        name: 'Thịt Kho Tàu Trứng cút',
+        category: 'meat',
+        calories: 520,
+        protein: 28,
+        carbs: 8,
+        fat: 42,
+        serving: '1 phần (150g)',
+        img: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=500',
+        cheatAlert: true,
+        oilLevel: 'Rất Cao',
+        cheatNote: 'Chứa nhiều mỡ động vật bão hòa (Fat cao). Nên bỏ bớt phần mỡ lợn và chỉ ăn phần thịt nạc.',
+        burnout: '50 phút tập cardio dốc.'
+      },
+      {
+        id: 'f1',
+        name: 'Sinh Tố Bơ Đậu Phộng',
+        category: 'gym',
+        calories: 340,
+        protein: 9,
+        carbs: 32,
+        fat: 20,
+        serving: '1 ly (300ml)',
+        img: 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=500',
+        cheatAlert: false,
+        oilLevel: 'Chất béo tốt',
+        cheatNote: 'Chứa chất béo đơn không bão hòa rất tốt cho tim mạch. Thích hợp cho người đang trong giai đoạn xả cơ (Bulking).',
+        burnout: '30 phút tập kháng lực.'
+      },
+      {
+        id: 'n3',
+        name: 'Bún Đậu Mắm Tôm',
+        category: 'meat',
+        calories: 650,
+        protein: 30,
+        carbs: 70,
+        fat: 26,
+        serving: '1 mẹt nhỏ',
+        img: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=500',
+        cheatAlert: true,
+        oilLevel: 'Cao',
+        cheatNote: 'Đậu hũ chiên giòn và chả cốm ngấm nhiều dầu mỡ. Nên hạn chế ăn buổi tối tránh tích mỡ bụng.',
+        burnout: '45 phút tập HIT.'
+      }
+    ];
 
-    // Start Live Camera
-    async function startCamera() {
-      hideElement('imagePreview');
-      hideElement('placeholderText');
-      hideElement('camError');
-      showElement('webcamVideo');
+    window.onload = function() {
+      initWebcam();
+      renderLibrary();
+      updateDiaryUI();
+    };
 
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('bg-neonGreen', 'text-gymDark');
+        b.classList.add('text-gray-400');
+      });
+      document.getElementById('tab-' + tabId)?.classList.add('bg-neonGreen', 'text-gymDark');
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+      document.getElementById(tabId)?.classList.remove('hidden');
+
+      if (tabId === 'cameraTab') initWebcam(); else stopWebcam();
+    }
+
+    async function initWebcam() {
       const video = document.getElementById('webcamVideo');
-
+      if (!video) return;
       try {
-        if (currentStream) {
-          currentStream.getTracks().forEach(track => track.stop());
-        }
-        currentStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
-          audio: false
+        if (webcamStream) stopWebcam();
+        webcamStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: currentCameraFacing } }, audio: false
         });
-        video.srcObject = currentStream;
-        document.getElementById('analyzeBtn').disabled = false;
-      } catch (err) {
-        console.error("Camera Error:", err);
-        hideElement('webcamVideo');
-        showElement('camError');
-        document.getElementById('camErrorText').textContent = 
-          "Không thể bật Camera trực tiếp. Hãy kiểm tra quyền truy cập hoặc bấm 'Chọn ảnh' bên cạnh.";
+        video.srcObject = webcamStream;
+      } catch (e) {
+        document.getElementById('camError')?.classList.remove('hidden');
       }
     }
 
-    // Handle Image Upload File
-    function handleFileSelect(event) {
-      const file = event.target.files[0];
+    function stopWebcam() {
+      if (webcamStream) { webcamStream.getTracks().forEach(t => t.stop()); webcamStream = null; }
+    }
+
+    function toggleCamera() {
+      currentCameraFacing = currentCameraFacing === 'user' ? 'environment' : 'user';
+      initWebcam();
+    }
+
+    function handleImageUpload(e) {
+      const file = e.target.files[0];
       if (!file) return;
-
-      if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-      }
-
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = function(evt) {
+        stopWebcam();
+        document.getElementById('webcamVideo').classList.add('hidden');
         const preview = document.getElementById('imagePreview');
-        preview.src = e.target.result;
-        
-        hideElement('webcamVideo');
-        hideElement('placeholderText');
-        hideElement('camError');
-        showElement('imagePreview');
-
-        selectedBase64Image = e.target.result.split(',')[1];
-        document.getElementById('analyzeBtn').disabled = false;
+        preview.src = evt.target.result;
+        preview.classList.remove('hidden');
       };
       reader.readAsDataURL(file);
     }
 
-    // Sample Selection Fallback
-    function selectSample(foodType) {
-      showElement('resultBox');
-      showElement('loadingSpinner');
-      document.getElementById('analysisContent').innerHTML = '';
+    async function captureAndScan() {
+      const laser = document.getElementById('laserLine');
+      laser.classList.remove('hidden');
+      updateScanStatus('Đang gửi tới Gemini Cloud AI...', false);
 
-      setTimeout(() => {
-        hideElement('loadingSpinner');
-        let data = {};
-        if (foodType === 'Pho Bo') {
-          data = { name: "Phở Bò Tái", calories: "450 kcal", protein: "25g", carbs: "55g", fat: "12g", advice: "Nên ăn bớt nước dùng nếu muốn giảm natri và mỡ dư thừa." };
-        } else if (foodType === 'Com Tam') {
-          data = { name: "Cơm Tấm Sườn Nuống", calories: "620 kcal", protein: "30g", carbs: "70g", fat: "22g", advice: "Lượng calo khá cao, nên ăn kèm nhiều dưa leo, cà chua để tăng chất xơ." };
-        } else {
-          data = { name: "Gà Luộc Lá Chanh", calories: "320 kcal", protein: "38g", carbs: "0g", fat: "18g", advice: "Món ăn giàu protein tuyệt vời cho người tập gym, nên bỏ da gà để giảm mỡ." };
-        }
+      const preview = document.getElementById('imagePreview');
+      const video = document.getElementById('webcamVideo');
+      let dataUrl = '';
 
-        document.getElementById('analysisContent').innerHTML = `
-          <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
-            <h3 class="text-xl font-bold text-emerald-800">${data.name}</h3>
-            <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
-              <div class="bg-white p-2 rounded shadow-sm"><b>Calo:</b> ${data.calories}</div>
-              <div class="bg-white p-2 rounded shadow-sm"><b>Protein:</b> ${data.protein}</div>
-              <div class="bg-white p-2 rounded shadow-sm"><b>Carbs:</b> ${data.carbs}</div>
-              <div class="bg-white p-2 rounded shadow-sm"><b>Fat:</b> ${data.fat}</div>
-            </div>
-            <p class="text-xs text-emerald-700 mt-3"><b>Gợi ý:</b> ${data.advice}</p>
-          </div>
-        `;
-      }, 800);
-    }
+      if (!preview.classList.contains('hidden')) {
+        dataUrl = preview.src;
+      } else if (video) {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      }
 
-    // Call Gemini Serverless Backend Function
-    async function analyzeFoodImage() {
-      showElement('resultBox');
-      showElement('loadingSpinner');
-      document.getElementById('analysisContent').innerHTML = '';
+      if (!dataUrl) {
+        alert('Vui lòng bật camera hoặc chọn ảnh trước khi quét!');
+        laser.classList.add('hidden');
+        return;
+      }
+
+      const base64 = dataUrl.split(',')[1];
+      const mime = dataUrl.match(/^data:(image\/[^;]+)/)?.[1] || 'image/jpeg';
 
       try {
-        let base64Data = selectedBase64Image;
-
-        // If taking snapshot directly from camera
-        if (!base64Data && currentStream) {
-          const video = document.getElementById('webcamVideo');
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth || 640;
-          canvas.height = video.videoHeight || 480;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          base64Data = canvas.toDataURL('image/jpeg').split(',')[1];
-        }
-
-        if (!base64Data) {
-          alert("Vui lòng bật camera hoặc chọn một bức ảnh trước!");
-          hideElement('loadingSpinner');
-          return;
-        }
-
-        // Call Serverless Function on Vercel
-        const response = await fetch('/api/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: base64Data })
-        });
-
-        const result = await response.json();
-        hideElement('loadingSpinner');
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Không thể phân tích ảnh.');
-        }
-
-        document.getElementById('analysisContent').innerHTML = `
-          <div class="prose max-w-none text-sm leading-relaxed text-gray-700 bg-gray-50 p-4 rounded-xl border">
-            ${result.text.replace(/\n/g, '<br>')}
-          </div>
-        `;
-
+        await callGeminiVisionApi(base64, mime, dataUrl);
       } catch (err) {
-        hideElement('loadingSpinner');
-        document.getElementById('analysisContent').innerHTML = `
-          <div class="text-red-500 bg-red-50 p-3 rounded-xl border border-red-200 text-sm">
-            <b>Lỗi:</b> ${err.message}
-          </div>
-        `;
+        console.error('Lỗi Gemini Serverless:', err);
+        updateScanStatus('Lỗi nhận diện AI', true);
+      } finally {
+        laser.classList.add('hidden');
       }
+    }
+
+    // === GỌI SERVERLESS FUNCTION CHUẨN ĐÃ BẢO MẬT KEY ===
+    async function callGeminiVisionApi(base64Image, mimeType, imageDataUrl) {
+      const libraryNames = FOOD_DATABASE.map(f => f.name).join('; ');
+
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64Image, mimeType, libraryNames })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Lỗi server HTTP ${response.status}`);
+      }
+
+      const r = await response.json();
+
+      if (r.isFood === false) {
+        updateScanStatus('Không nhận diện được món ăn', true);
+        alert('Hình ảnh không phải là món ăn hoặc quá mờ. Vui lòng thử lại!');
+        return;
+      }
+
+      const lib = r.libraryName
+        ? FOOD_DATABASE.find(f => f.name.toLowerCase() === r.libraryName.toLowerCase())
+        : null;
+
+      showRecognitionNotice('Gemini Cloud AI', r.foodName || 'Món Ăn AI', lib ? `Khớp thư viện chuẩn: ${lib.name}` : 'Số liệu dinh dưỡng ước tính bằng AI');
+
+      if (lib) {
+        displayScanResult({ ...lib, img: imageDataUrl });
+      } else {
+        displayScanResult({
+          name: r.foodName || 'Món Quét AI',
+          category: r.category || 'meat',
+          calories: Math.round(r.calories) || 250,
+          protein: r.protein ?? 20,
+          carbs: r.carbs ?? 15,
+          fat: r.fat ?? 10,
+          serving: r.serving || '1 phần vừa',
+          img: imageDataUrl,
+          cheatAlert: r.cheatAlert ?? false,
+          oilLevel: r.oilLevel || 'Thấp - Vừa',
+          cheatNote: r.cheatNote || 'Chế độ dinh dưỡng cân bằng.',
+          burnout: r.burnout || '25 phút vận động nhẹ nhàng.'
+        });
+      }
+      updateScanStatus('Gemini đã nhận diện ✓', false);
+    }
+
+    function showRecognitionNotice(title, label, note) {
+      document.getElementById('tfNoticeTitle').innerText = title;
+      document.getElementById('tfRecognitionLabel').innerText = label;
+      document.getElementById('tfRecognitionConfidence').innerText = note;
+      document.getElementById('tfRecognitionNotice').classList.remove('hidden');
+    }
+
+    function updateScanStatus(msg, isErr) {
+      const b = document.getElementById('scanStatusBadge');
+      b.innerText = msg;
+      b.className = isErr ? 'bg-neonRose/20 text-neonRose text-xs px-2.5 py-1 rounded-full border border-neonRose/30' : 'bg-neonGreen/20 text-neonGreen text-xs px-2.5 py-1 rounded-full border border-neonGreen/30';
+    }
+
+    function displayScanResult(food) {
+      scannedBaseFood = food;
+      selectedScannedFood = { ...food };
+      document.getElementById('scanPlaceholder').classList.add('hidden');
+      document.getElementById('scanContent').classList.remove('hidden');
+
+      document.getElementById('scannedFoodName').innerText = food.name;
+      document.getElementById('scannedFoodImage').src = food.img;
+      document.getElementById('scannedFoodServing').innerText = 'Khẩu phần: ' + food.serving;
+
+      document.getElementById('oilRatingText').innerText = 'Dầu mỡ: ' + (food.oilLevel || 'Vừa');
+      document.getElementById('cheatMealAdvice').innerText = food.cheatNote || 'Dinh dưỡng cân bằng.';
+      document.getElementById('burnoutAdvice').innerHTML = '<i class="fa-solid fa-person-running mr-1"></i> Gợi ý tiêu hao: ' + (food.burnout || '20 phút đi bộ.');
+
+      document.getElementById('portionSelect').value = '1';
+      applyPortion();
+    }
+
+    function applyPortion() {
+      if (!scannedBaseFood) return;
+      const factor = parseFloat(document.getElementById('portionSelect').value) || 1.0;
+
+      selectedScannedFood = {
+        ...scannedBaseFood,
+        calories: Math.round(scannedBaseFood.calories * factor),
+        protein: Math.round(scannedBaseFood.protein * factor),
+        carbs: Math.round(scannedBaseFood.carbs * factor),
+        fat: Math.round(scannedBaseFood.fat * factor)
+      };
+
+      document.getElementById('scannedCal').innerText = selectedScannedFood.calories;
+      document.getElementById('scannedProtein').innerText = selectedScannedFood.protein;
+      document.getElementById('scannedCarbs').innerText = selectedScannedFood.carbs;
+      document.getElementById('scannedFat').innerText = selectedScannedFood.fat;
+    }
+
+    function simulateScan(keyword) {
+      const f = FOOD_DATABASE.find(x => x.name.toLowerCase().includes(keyword.toLowerCase())) || FOOD_DATABASE[0];
+      showRecognitionNotice('Chế độ xem mẫu', f.name, 'Món ăn từ thư viện chuẩn FitScan');
+      displayScanResult(f);
+      updateScanStatus('Mẫu thử nghiệm', false);
+    }
+
+    // === THƯ VIỆN MÓN ĂN ===
+    function filterLibrary(cat) {
+      currentFilterCategory = cat;
+      document.querySelectorAll('.lib-filter-btn').forEach(b => {
+        b.classList.remove('bg-neonGreen', 'text-gymDark');
+        b.classList.add('bg-gymCard', 'text-gray-300');
+      });
+      event.target.classList.remove('bg-gymCard', 'text-gray-300');
+      event.target.classList.add('bg-neonGreen', 'text-gymDark');
+      renderLibrary();
+    }
+
+    function renderLibrary() {
+      const grid = document.getElementById('libraryFoodGrid');
+      if (!grid) return;
+
+      const search = document.getElementById('librarySearchInput')?.value.toLowerCase() || '';
+
+      const filtered = FOOD_DATABASE.filter(item => {
+        const matchesCat = currentFilterCategory === 'all' || item.category === currentFilterCategory;
+        const matchesSearch = item.name.toLowerCase().includes(search);
+        return matchesCat && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-10 text-gray-500">Không tìm thấy món ăn phù hợp.</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(item => `
+        <div class="glass-panel p-3.5 rounded-2xl border border-gray-800 flex flex-col justify-between space-y-3 hover:border-neonGreen/40 transition-all">
+          <div class="relative w-full h-32 rounded-xl overflow-hidden">
+            <img src="${item.img}" alt="${item.name}" class="w-full h-full object-cover">
+            ${item.cheatAlert ? `<span class="absolute top-2 right-2 bg-neonAmber text-gymDark font-extrabold text-[9px] px-2 py-0.5 rounded-full"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Calo Cao</span>` : ''}
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-gray-100">${item.name}</h3>
+            <p class="text-[11px] text-gray-400">${item.serving}</p>
+          </div>
+          <div class="grid grid-cols-4 gap-1 text-center bg-gymCard p-2 rounded-xl text-[10px]">
+            <div><span class="block text-gray-400">Calo</span><span class="font-bold text-neonRose">${item.calories}</span></div>
+            <div><span class="block text-gray-400">Prot</span><span class="font-bold text-neonCyan">${item.protein}g</span></div>
+            <div><span class="block text-gray-400">Carb</span><span class="font-bold text-neonAmber">${item.carbs}g</span></div>
+            <div><span class="block text-gray-400">Fat</span><span class="font-bold text-purple-400">${item.fat}g</span></div>
+          </div>
+          <p class="text-[10px] text-gray-400 italic line-clamp-2"><i class="fa-solid fa-lightbulb text-neonAmber mr-1"></i>${item.cheatNote}</p>
+          <button onclick='quickAddFromLibrary(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="w-full py-2 bg-gymCard hover:bg-neonGreen hover:text-gymDark border border-gray-700 font-bold text-xs rounded-xl transition-all">
+            + Thêm vào nhật ký
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function quickAddFromLibrary(item) {
+      diaryEntries.push({ ...item, mealTime: 'lunch' });
+      updateDiaryUI();
+      alert(`Đã thêm "${item.name}" vào Bữa Trưa!`);
+    }
+
+    function addScannedToDiary() {
+      if (!selectedScannedFood) return;
+      diaryEntries.push({ ...selectedScannedFood, mealTime: 'lunch' });
+      updateDiaryUI();
+      switchTab('diaryTab');
+    }
+
+    function updateDiaryUI() {
+      let totalCal = 0, totalProt = 0, totalCarbs = 0, totalFat = 0;
+
+      const lunchBox = document.getElementById('mealList-lunch');
+      if (diaryEntries.length === 0) {
+        if (lunchBox) lunchBox.innerHTML = '<p class="text-xs text-gray-500 italic">Chưa có món ăn nào trong nhật ký hôm nay.</p>';
+      } else {
+        if (lunchBox) {
+          lunchBox.innerHTML = diaryEntries.map((entry, idx) => {
+            totalCal += entry.calories;
+            totalProt += entry.protein;
+            totalCarbs += entry.carbs;
+            totalFat += entry.fat;
+            return `
+              <div class="flex items-center justify-between bg-gymCard p-2.5 rounded-xl border border-gray-800 text-xs">
+                <div class="flex items-center space-x-3">
+                  <img src="${entry.img}" class="w-10 h-10 rounded-lg object-cover">
+                  <div>
+                    <h4 class="font-bold text-white">${entry.name}</h4>
+                    <p class="text-[10px] text-gray-400">${entry.calories} kcal | ${entry.protein}g Prot</p>
+                  </div>
+                </div>
+                <button onclick="removeDiaryEntry(${idx})" class="text-gray-500 hover:text-neonRose text-sm px-2"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      document.getElementById('headerCalories').innerText = totalCal;
+      document.getElementById('headerProtein').innerText = totalProt;
+
+      document.getElementById('diaryCalText').innerText = `${totalCal} / ${userCalorieTarget} kcal`;
+      document.getElementById('diaryProteinText').innerText = `${totalProt} / 140g`;
+      document.getElementById('diaryCarbsText').innerText = `${totalCarbs} / 250g`;
+      document.getElementById('diaryFatText').innerText = `${totalFat} / 60g`;
+      document.getElementById('cal-lunch').innerText = `${totalCal} kcal`;
+    }
+
+    function removeDiaryEntry(index) {
+      diaryEntries.splice(index, 1);
+      updateDiaryUI();
+    }
+
+    function clearDiary() {
+      if (confirm('Xóa tất cả nhật ký hôm nay?')) {
+        diaryEntries = [];
+        updateDiaryUI();
+      }
+    }
+
+    // === TÍNH BMR & TDEE ===
+    function calculateBMR() {
+      const gender = document.getElementById('bmrGender').value;
+      const age = parseFloat(document.getElementById('bmrAge').value) || 22;
+      const height = parseFloat(document.getElementById('bmrHeight').value) || 170;
+      const weight = parseFloat(document.getElementById('bmrWeight').value) || 65;
+      const activity = parseFloat(document.getElementById('bmrActivity').value) || 1.55;
+
+      let bmr = (10 * weight) + (6.25 * height) - (5 * age);
+      bmr += (gender === 'male') ? 5 : -161;
+
+      const tdee = Math.round(bmr * activity);
+      bmr = Math.round(bmr);
+
+      document.getElementById('resBMR').innerText = bmr;
+      document.getElementById('resTDEE').innerText = tdee;
+      document.getElementById('bmrResultBox').classList.remove('hidden');
+    }
+
+    function applyTDEEToTarget() {
+      const tdee = parseInt(document.getElementById('resTDEE').innerText) || 2200;
+      userCalorieTarget = tdee;
+      document.getElementById('headerCalorieTarget').innerText = tdee;
+      updateDiaryUI();
+      alert(`Đã cập nhật mục tiêu Calo hàng ngày là ${tdee} kcal!`);
     }
   </script>
 </body>
