@@ -1,11 +1,26 @@
+// api/analyze.js
 export default async function handler(req, res) {
+  // Cho phép CORS để web gọi ổn định
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-Type, Date, X-Api-Version'
+  );
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Chưa cài đặt GEMINI_API_KEY trên Vercel' });
+    return res.status(500).json({ error: 'Chưa cài đặt GEMINI_API_KEY trên Vercel Environment Variables' });
   }
 
   try {
@@ -21,22 +36,25 @@ Quy tắc:
 - Nếu ảnh khớp một món trong danh sách, đặt "libraryName" đúng y nguyên tên đó. Nếu không khớp, đặt "libraryName": null.
 - Nếu ảnh không có món ăn, đặt "isFood": false.
 - Ước lượng dinh dưỡng cho khẩu phần nhìn thấy trong ảnh.
-Chỉ trả về JSON:
+Chỉ trả về JSON thuần túy, không kèm markdown code block:
 {
   "isFood": true,
   "foodName": "Tên món tiếng Việt",
   "libraryName": "tên trong thư viện hoặc null",
-  "confidence": số từ 0 đến 1,
-  "category": "veg" | "meat" | "fried" | "gym" | "drinks" | "fruit",
-  "calories": số nguyên, "protein": số, "carbs": số, "fat": số,
-  "serving": "mô tả khẩu phần",
-  "cheatAlert": true/false,
-  "oilLevel": "mức dầu mỡ",
-  "cheatNote": "lời khuyên ngắn",
-  "burnout": "bài tập tiêu hao"
+  "confidence": 0.95,
+  "category": "veg",
+  "calories": 250,
+  "protein": 20,
+  "carbs": 15,
+  "fat": 10,
+  "serving": "1 phần vừa",
+  "cheatAlert": false,
+  "oilLevel": "Thấp",
+  "cheatNote": "Cân bằng tốt",
+  "burnout": "20 phút đi bộ"
 }`;
 
-    const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+    const GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
     let geminiResponse = null;
     let lastError = null;
 
@@ -81,7 +99,8 @@ Chỉ trả về JSON:
       return res.status(500).json({ error: 'Gemini không trả về kết quả' });
     }
 
-    const result = JSON.parse(rawText.replace(/```json|```/g, '').trim());
+    const cleanText = rawText.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(cleanText);
     return res.status(200).json(result);
 
   } catch (error) {
