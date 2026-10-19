@@ -1,13 +1,11 @@
 export default async function handler(req, res) {
-  // Chỉ chấp nhận phương thức POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  // Lấy Gemini API Key từ biến môi trường của Vercel
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Chưa cấu hình GEMINI_API_KEY trên Vercel' });
+    return res.status(500).json({ error: 'Chưa cài đặt GEMINI_API_KEY trên Vercel' });
   }
 
   try {
@@ -42,7 +40,6 @@ Chỉ trả về JSON:
     let geminiResponse = null;
     let lastError = null;
 
-    // Thử lần lượt các model Gemini
     for (const model of GEMINI_MODELS) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
       const response = await fetch(url, {
@@ -81,13 +78,13 @@ Chỉ trả về JSON:
 
     const rawText = geminiResponse?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!rawText) {
-      return res.status(500).json({ error: 'Gemini không trả về dữ liệu văn bản' });
+      return res.status(500).json({ error: 'Gemini không trả về kết quả' });
     }
 
     const result = JSON.parse(rawText.replace(/```json|```/g, '').trim());
     return res.status(200).json(result);
 
   } catch (error) {
-    return res.status(500).json({ error: error.message || 'Lỗi xử lý hệ thống' });
+    return res.status(500).json({ error: error.message || 'Lỗi hệ thống' });
   }
 }
