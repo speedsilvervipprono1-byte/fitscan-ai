@@ -1318,6 +1318,8 @@
 
     // ===== Capture & scan =====
     async function captureAndScan() {
+    // ===== Gọi API Cloud ngầm qua Vercel Serverless Function =====
+    async function captureAndScan() {
       const laser = document.getElementById('laserLine');
       const scanBtn = document.getElementById('scanBtn');
 
@@ -1326,33 +1328,30 @@
       scanBtn.classList.add('opacity-50');
       document.getElementById('tfRecognitionNotice').classList.add('hidden');
       document.getElementById('manualMatchBox').classList.add('hidden');
-      updateScanStatus('Đang tải mô hình AI...', false);
+      updateScanStatus('Gemini AI đang phân tích ảnh...', false);
 
       let imageDataBase64 = '';
       let imagePreviewDataUrl = '';
       let imageMimeType = 'image/jpeg';
-      let imageToClassify = null;
       const video = document.getElementById('webcamVideo');
       const preview = document.getElementById('imagePreview');
 
       if (!preview.classList.contains('hidden') && preview.src) {
-        imageToClassify = preview;
         imagePreviewDataUrl = preview.src;
         imageDataBase64 = imagePreviewDataUrl.split(',')[1] || '';
         imageMimeType = imagePreviewDataUrl.match(/^data:(image\/[^;]+)/)?.[1] || imageMimeType;
       } else if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
         const vw = video.videoWidth || 640, vh = video.videoHeight || 480;
-        const scale = Math.min(1, MAX_IMG_SIDE / Math.max(vw, vh));
+        const scale = Math.min(1, 1024 / Math.max(vw, vh));
         const canvas = document.createElement('canvas');
         canvas.width = Math.round(vw * scale);
         canvas.height = Math.round(vh * scale);
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
         imagePreviewDataUrl = canvas.toDataURL('image/jpeg', 0.85);
         imageDataBase64 = imagePreviewDataUrl.split(',')[1];
-        imageToClassify = canvas;
       }
 
-      if (!imageToClassify) {
+      if (!imageDataBase64) {
         updateScanStatus('Chưa có ảnh để quét', true);
         laser.classList.add('hidden');
         scanBtn.disabled = false;
@@ -1363,36 +1362,51 @@
       lastScanImage = imagePreviewDataUrl;
 
       try {
-        if (userApiKey && userApiKey.trim() !== '' && imageDataBase64) {
-          try {
-            await callGeminiVisionApi(imageDataBase64, imageMimeType, imagePreviewDataUrl);
-          } catch (err) {
-            console.error('Gemini API error:', err);
-            if (err.notFood) {
-              updateScanStatus('Không thấy món ăn trong ảnh', true);
-              document.getElementById('scanPlaceholderMessage').textContent = 'Gemini không thấy món ăn trong ảnh. Hãy chụp lại gần và rõ hơn.';
-              return;
-            }
-            const detail = err.apiMessage ? ` — ${err.apiMessage.slice(0, 140)}` : '';
-            const why = (err.status === 400 || err.status === 401 || err.status === 403) ? `HTTP ${err.status}${detail}`
-                      : err.status === 429 ? 'đã hết lượt gọi miễn phí, thử lại sau'
-                      : err.status === 404 ? 'model Gemini không còn khả dụng'
-                      : (err.message || 'lỗi kết nối');
-            updateScanStatus('Gemini lỗi: ' + why, true);
-            await runTensorFlowScan(imageToClassify);
-            showRecognitionNotice('Đang dùng MobileNet (kém chính xác với món Việt)', 'Gemini lỗi: ' + why, 'Kiểm tra lại API key hoặc kết nối mạng để có kết quả tốt hơn.');
-          }
-        } else {
-          await runTensorFlowScan(imageToClassify);
+        const libraryNames = FOOD_DATABASE.map(f => f.name).join('; ');
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64Image: imageDataBase64, mimeType: imageMimeType, libraryNames })
+        });
+
+        const r = await response.json();
+        if (!response.ok) throw new Error(r.error || 'Lỗi server');
+
+        if (r.isFood === false) {
+          updateScanStatus('Không thấy món ăn trong ảnh', true);
+          document.getElementById('scanPlaceholderMessage').textContent = 'Gemini không tìm thấy món ăn trong ảnh. Hãy chụp rõ hơn.';
+          return;
         }
+
+        const lib = r.libraryName
+          ? FOOD_DATABASE.find(f => f.name.toLowerCase() === r.libraryName.toLowerCase())
+          : null;
+
+        document.querySelector('#tfRecognitionNotice p.font-semibold').textContent = 'Gemini Cloud AI nhận diện';
+        document.getElementById('tfRecognitionLabel').textContent = `Món: ${r.foodName || 'Món ăn'} (${Math.round((r.confidence || 0.9) * 100)}%)`;
+        document.getElementById('tfRecognitionNotice').classList.remove('hidden');
+
+        if (lib) {
+          displayScanResult({ ...lib, img: imagePreviewDataUrl });
+        } else {
+          displayScanResult({
+            name: r.foodName || 'Món Quét AI',
+            category: r.category || 'meat',
+            calories: Math.round(r.calories) || 250,
+            protein: r.protein ?? 20,
+            carbs: r.carbs ?? 15,
+            fat: r.fat ?? 10,
+            serving: r.serving || '1 phần vừa',
+            img: imagePreviewDataUrl,
+            oilLevel: r.oilLevel || 'Thấp',
+            cheatNote: r.cheatNote || 'Cân bằng dinh dưỡng tốt.',
+            burnout: r.burnout || '25 phút vận động nhẹ.'
+          });
+        }
+        updateScanStatus('Nhận diện thành công ✓', false);
       } catch (err) {
-        console.error('TensorFlow.js food recognition failed:', err);
-        document.getElementById('tfRecognitionNotice').classList.add('hidden');
-        document.getElementById('scanContent').classList.add('hidden');
-        document.getElementById('scanPlaceholder').classList.remove('hidden');
-        document.getElementById('scanPlaceholderMessage').textContent = 'Không thể nhận diện ảnh. Hãy kiểm tra kết nối mạng rồi thử lại.';
-        showManualPick();
-        updateScanStatus('Nhận diện thất bại', true);
+        console.error(err);
+        updateScanStatus('Lỗi kết nối API Server', true);
       } finally {
         laser.classList.add('hidden');
         scanBtn.disabled = false;
