@@ -1,0 +1,6 @@
+{
+  "name": "fitscan-ai-server-key",
+  "version": "1.0.0",
+  "private": true,
+  "engines": { "node": ">=20" }
+}
