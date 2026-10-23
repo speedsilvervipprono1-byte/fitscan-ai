@@ -186,22 +186,30 @@
             </label>
           </div>
 
-          <div id="scannerOverlay" class="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-3 sm:p-4">
+          <div id="scannerOverlay" class="absolute inset-0 pointer-events-none border-[6px] sm:border-[12px] border-black/40 flex flex-col justify-between p-3 sm:p-4">
+
             <div class="flex justify-between items-start text-xs font-mono">
-              <span class="bg-black/55 backdrop-blur-md px-2.5 py-1.5 rounded-full text-neonGreen border border-neonGreen/30 flex items-center space-x-1 shadow-lg">
-                <span class="w-2 h-2 rounded-full bg-neonGreen animate-pulse mr-1"></span>
-                <span>CAMERA READY</span>
+              <span class="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded text-neonGreen border border-neonGreen/30 flex items-center space-x-1">
+                <span class="w-2 h-2 rounded-full bg-neonGreen animate-ping mr-1"></span>
+                <span>SYSTEM ONLINE</span>
               </span>
-              <span class="bg-black/55 backdrop-blur-md px-2.5 py-1 rounded-full text-gray-300 border border-gray-700 hidden" id="camResolution">
-                LIVE CAM
+              <span class="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded text-gray-300 border border-gray-700 hidden" id="camResolution">
+                LIVE CAM 1080P
               </span>
             </div>
 
-            <div id="laserLine" class="hidden absolute left-0 right-0 top-1/2 h-0.5 bg-gradient-to-r from-transparent via-neonGreen to-transparent shadow-[0_0_15px_#10B981] animate-scan-line"></div>
+            <div class="relative w-48 h-48 sm:w-64 sm:h-64 mx-auto border-2 border-dashed border-neonGreen/60 rounded-2xl flex items-center justify-center transition-all duration-300">
+              <div class="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-neonGreen"></div>
+              <div class="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-neonGreen"></div>
+              <div class="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-neonGreen"></div>
+              <div class="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-neonGreen"></div>
 
-            <div class="self-center mb-20 sm:mb-24 max-w-[90%] rounded-2xl bg-black/55 backdrop-blur-md border border-white/15 px-4 py-2.5 text-center shadow-lg">
-              <p class="text-sm sm:text-base font-semibold text-white">Đưa món ăn vào khung hình</p>
-              <p class="text-[11px] sm:text-xs text-gray-200 mt-1">Vui lòng bấm Quét khi ảnh đã rõ</p>
+              <div id="laserLine" class="hidden absolute left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-neonGreen to-transparent shadow-[0_0_15px_#10B981] animate-scan-line"></div>
+              <div class="text-[10px] text-neonGreen/70 font-mono tracking-widest text-center uppercase">Đặt món ăn vào khung hình</div>
+            </div>
+
+            <div class="hidden sm:block text-right text-[10px] font-mono text-neonCyan/80 bg-black/50 px-2 py-0.5 rounded self-end">
+              FITSCAN_ENGINE_v3.2
             </div>
           </div>
 
@@ -210,9 +218,9 @@
               <i class="fa-solid fa-camera-rotate"></i>
             </button>
 
-            <button onclick="captureAndScan()" id="scanBtn" class="px-5 sm:px-7 py-3.5 sm:py-3 bg-gradient-to-r from-neonGreen to-neonCyan text-gymDark font-black text-xs sm:text-sm whitespace-nowrap rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 glow-neon">
+            <button onclick="captureAndScan()" id="scanBtn" class="px-4 sm:px-6 py-3.5 sm:py-3 bg-gradient-to-r from-neonGreen to-neonCyan text-gymDark font-black text-xs sm:text-sm whitespace-nowrap rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 glow-neon">
               <i class="fa-solid fa-bolt text-base"></i>
-              <span>QUÉT MÓN ĂN</span>
+              <span><span class="hidden min-[400px]:inline">CHỤP ẢNH & </span>QUÉT AI</span>
             </button>
 
             <label for="fileInput" title="Tải ảnh món ăn lên" class="h-12 min-w-[3rem] shrink-0 px-3 sm:px-4 bg-black/60 hover:bg-black text-white text-xs font-semibold rounded-full border border-gray-700 backdrop-blur-md cursor-pointer transition-all flex items-center justify-center space-x-2">
@@ -288,8 +296,6 @@
                   <span id="scannedFoodCategory" class="text-[10px] uppercase font-bold text-neonGreen bg-neonGreen/10 border border-neonGreen/30 px-2 py-0.5 rounded-md">Món Ăn Việt Nam</span>
                   <h3 id="scannedFoodName" class="text-xl font-black text-white mt-1">Tên Món Ăn</h3>
                   <p id="scannedFoodServing" class="text-xs text-gray-400">Khẩu phần: ~150g (1 phần standard)</p>
-                  <p id="nutritionSourceLabel" class="text-[11px] font-semibold text-neonCyan mt-1">Nguồn dinh dưỡng: theo thư viện</p>
-                  <p id="nutritionSourceNote" class="text-[10px] text-gray-500 mt-0.5">Giá trị tham khảo; khẩu phần thực tế có thể khác.</p>
                 </div>
               </div>
 
@@ -965,7 +971,7 @@
     let webcamStream = null;
     let currentCameraFacing = 'environment';
     // API key được giữ ở máy chủ; trình duyệt không bao giờ nhận key.
-    let userApiKey = 'server-managed'; // Chỉ bật luồng máy chủ; không chứa khóa API trong trình duyệt.
+    let userApiKey = 'server-managed';
     let selectedScannedFood = null;   // món đã nhân khẩu phần (dùng để thêm vào nhật ký)
     let scannedBaseFood = null;       // món gốc (khẩu phần ×1)
     let selectedDetailFood = null;
@@ -1292,7 +1298,7 @@
         document.getElementById('scanContent').classList.add('hidden');
         document.getElementById('manualMatchBox').classList.add('hidden');
         document.getElementById('scanPlaceholder').classList.remove('hidden');
-        document.getElementById('scanPlaceholderMessage').innerHTML = 'Ảnh đã sẵn sàng. Nhấn <span class="text-neonGreen font-semibold">"QUÉT MÓN ĂN"</span> để nhận diện.';
+        document.getElementById('scanPlaceholderMessage').innerHTML = 'Ảnh đã sẵn sàng. Nhấn <span class="text-neonGreen font-semibold">"Chụp Ảnh &amp; Quét AI"</span> để nhận diện.';
         document.getElementById('tfRecognitionNotice').classList.add('hidden');
         selectedScannedFood = null;
         scannedBaseFood = null;
@@ -1394,35 +1400,25 @@
     async function callGeminiVisionApi(base64Image, mimeType, imageDataUrl) {
       // Đưa danh sách món trong thư viện để Gemini ưu tiên chọn đúng tên món
       const libraryNames = FOOD_DATABASE.map(f => f.name).join('; ');
-      const promptText = `Bạn là hệ thống nhận diện món ăn và ước lượng dinh dưỡng đa quốc gia. Phân tích ảnh cẩn thận.
-Phạm vi gồm món Việt, món quốc tế, thức ăn nhanh, món tự nấu, đồ ăn vặt, trái cây, rau củ, đồ uống, món tráng miệng và thực phẩm đóng gói.
-Danh sách sau chỉ để đối chiếu khi khớp chính xác, không giới hạn khả năng nhận diện: ${libraryNames}.
+      const promptText = `Bạn là chuyên gia dinh dưỡng món Việt. Hãy nhận diện món ăn/đồ uống chính trong ảnh.
+Danh sách món trong thư viện: ${libraryNames}.
 Quy tắc:
-- Nếu ảnh có thức ăn/đồ uống/thực phẩm đóng gói, luôn trả về kết quả tốt nhất có thể dù món không có trong thư viện.
-- Nếu ảnh mờ hoặc không phân biệt chắc chắn, dùng tên mô tả trung thực, giảm confidence và ghi rõ bất định trong serving hoặc cheatNote.
-- libraryName chỉ là tên trong thư viện khi đó thực sự là cùng món. Nếu chỉ giống gần đúng, đặt null; không dùng số liệu của món khác.
-- Với bao bì: nếu đọc rõ nhãn dinh dưỡng, đặt nutritionSource là "label" và đọc đúng số liệu/đơn vị hiển thị. Nếu không đọc rõ, đặt "estimate"; không bịa là đã đọc được nhãn.
-- Nếu khớp chính xác món trong thư viện, đặt nutritionSource là "library". Nếu không khớp và không đọc được nhãn, đặt "estimate".
-- Ước lượng khẩu phần nhìn thấy; không giả vờ biết chính xác gram từ ảnh. Nêu giả định trong serving.
-- Calo và macro phải hợp lý. Không tuyên bố chính xác tuyệt đối; khi thiếu thông tin, giảm confidence.
-- Chỉ đặt isFood=false khi ảnh rõ ràng không có thức ăn, đồ uống hoặc thực phẩm.
-Chỉ trả về JSON hợp lệ, không markdown, theo schema:
+- Nếu ảnh khớp một món trong danh sách, đặt "libraryName" đúng y nguyên tên đó. Nếu không khớp, đặt "libraryName": null.
+- Nếu ảnh không có món ăn, đặt "isFood": false.
+- Ước lượng dinh dưỡng cho khẩu phần nhìn thấy trong ảnh.
+Chỉ trả về JSON:
 {
   "isFood": true,
-  "foodName": "Tên món bằng tiếng Việt",
-  "libraryName": "Tên khớp chính xác trong thư viện hoặc null",
-  "confidence": 0.0,
-  "nutritionSource": "library | label | estimate",
-  "category": "veg | meat | fried | gym | drinks | fruit",
-  "calories": 250,
-  "protein": 10,
-  "carbs": 20,
-  "fat": 8,
-  "serving": "Khẩu phần và giả định",
-  "cheatAlert": false,
-  "oilLevel": "Mức dầu mỡ hoặc chưa xác định",
-  "cheatNote": "Lưu ý ngắn và nêu bất định nếu cần",
-  "burnout": "Gợi ý vận động chung"
+  "foodName": "Tên món tiếng Việt",
+  "libraryName": "tên trong thư viện hoặc null",
+  "confidence": số từ 0 đến 1,
+  "category": "veg" | "meat" | "fried" | "gym" | "drinks" | "fruit",
+  "calories": số nguyên, "protein": số, "carbs": số, "fat": số,
+  "serving": "mô tả khẩu phần",
+  "cheatAlert": true/false,
+  "oilLevel": "mức dầu mỡ",
+  "cheatNote": "lời khuyên ngắn",
+  "burnout": "bài tập tiêu hao"
 }`;
 
       const payload = {
@@ -1456,36 +1452,33 @@ Chỉ trả về JSON hợp lệ, không markdown, theo schema:
         const e = new Error('NOT_FOOD'); e.notFood = true; throw e;
       }
 
-      // Chỉ dùng thư viện khi tên món khớp chính xác; nếu không, dùng số ước tính hoặc số đọc từ nhãn.
-      const lib = r.nutritionSource !== 'label' && r.libraryName
+      // Khớp thư viện → dùng số liệu thư viện (nhất quán); không khớp → dùng số ước lượng của Gemini
+      const lib = r.libraryName
         ? FOOD_DATABASE.find(f => normalizeFoodLabel(f.name) === normalizeFoodLabel(r.libraryName))
         : null;
-      const confidence = Number.isFinite(Number(r.confidence)) ? Math.max(0, Math.min(1, Number(r.confidence))) : null;
-      const confText = confidence !== null ? ` · độ tin cậy AI ${Math.round(confidence * 100)}%` : '';
-      const sourceNote = lib
-        ? `Dùng dữ liệu thư viện cho món khớp chính xác: ${lib.name}. Khẩu phần thực tế có thể khác.`
-        : r.nutritionSource === 'label'
-          ? 'AI đọc thông tin trên nhãn bao bì trong ảnh; hãy kiểm tra lại nếu nhãn nhỏ hoặc mờ.'
-          : 'Dinh dưỡng do AI ước tính từ hình ảnh; không phải phép đo hay số liệu đã xác minh.';
-      showRecognitionNotice('Gemini nhận diện', `${r.foodName || 'Thực phẩm'}${confText}`, sourceNote);
+      const confText = typeof r.confidence === 'number' ? ` · tin cậy ${Math.round(r.confidence * 100)}%` : '';
+      showRecognitionNotice('Gemini nhận diện', `${r.foodName || 'Món ăn'}${confText}`,
+        lib ? `Khớp thư viện: ${lib.name}` : 'Số liệu dinh dưỡng do Gemini ước lượng');
+
       if (lib) {
-        displayScanResult({ ...lib, img: imageDataUrl, nutritionSource: 'library', nutritionConfidence: confidence });
+        displayScanResult({ ...lib, img: imageDataUrl });
       } else {
-        const num = (value, fallback) => Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : fallback;
         displayScanResult({
-          name: String(r.foodName || 'Thực phẩm chưa xác định').slice(0, 100),
-          category: ['veg','meat','fried','gym','drinks','fruit'].includes(r.category) ? r.category : 'meat',
-          calories: Math.round(num(r.calories, 250)), protein: num(r.protein, 10),
-          carbs: num(r.carbs, 20), fat: num(r.fat, 8),
-          serving: String(r.serving || '1 khẩu phần ước lượng').slice(0, 160),
-          img: imageDataUrl, nutritionSource: r.nutritionSource === 'label' ? 'label' : 'estimate',
-          nutritionConfidence: confidence, cheatAlert: r.cheatAlert === true,
-          oilLevel: String(r.oilLevel || 'Chưa xác định').slice(0, 40),
-          cheatNote: String(r.cheatNote || 'Số liệu chỉ là ước lượng; nguyên liệu và khẩu phần thực tế có thể làm thay đổi kết quả.').slice(0, 300),
-          burnout: String(r.burnout || 'Có thể vận động nhẹ sau bữa ăn; nhu cầu thay đổi theo từng người.').slice(0, 200)
+          name: r.foodName || 'Món Quét AI',
+          category: r.category || 'meat',
+          calories: Math.round(r.calories) || 250,
+          protein: r.protein ?? 20,
+          carbs: r.carbs ?? 15,
+          fat: r.fat ?? 10,
+          serving: r.serving || '1 phần vừa',
+          img: imageDataUrl,
+          cheatAlert: r.cheatAlert ?? false,
+          oilLevel: r.oilLevel || 'Thấp',
+          cheatNote: r.cheatNote || 'Cân bằng dinh dưỡng tốt.',
+          burnout: r.burnout || '25 phút vận động nhẹ.'
         });
       }
-      updateScanStatus(confidence !== null && confidence < 0.4 ? 'Nhận diện chưa chắc chắn — hãy kiểm tra' : 'Gemini đã nhận diện ✓', false);
+      updateScanStatus('Gemini đã nhận diện ✓', false);
     }
 
     function showRecognitionNotice(title, label, note) {
@@ -1527,7 +1520,7 @@ Chỉ trả về JSON hợp lệ, không markdown, theo schema:
       showTensorFlowRecognition(usedPrediction, matchedFood, predictions);
 
       if (matchedFood) {
-        displayScanResult({ ...matchedFood, img: lastScanImage || matchedFood.img, nutritionSource: 'library' });
+        displayScanResult({ ...matchedFood, img: lastScanImage || matchedFood.img });
         updateScanStatus('Đã nhận diện món ăn ✓', false);
       } else {
         selectedScannedFood = null;
@@ -1684,24 +1677,6 @@ Chỉ trả về JSON hợp lệ, không markdown, theo schema:
 
       document.getElementById('scannedFoodCategory').innerText = categoryMap[foodItem.category] || 'Món Ăn';
       document.getElementById('scannedFoodServing').innerText = `Khẩu phần: ${foodItem.serving || '100g'}`;
-      const source = foodItem.nutritionSource || 'library';
-      const sourceLabel = document.getElementById('nutritionSourceLabel');
-      const sourceNote = document.getElementById('nutritionSourceNote');
-      if (sourceLabel && sourceNote) {
-        if (source === 'label') {
-          sourceLabel.textContent = 'Nguồn dinh dưỡng: đọc từ nhãn bao bì';
-          sourceLabel.className = 'text-[11px] font-semibold text-neonGreen mt-1';
-          sourceNote.textContent = 'AI đọc thông tin trên nhãn ảnh; hãy kiểm tra lại nếu chữ nhỏ hoặc mờ.';
-        } else if (source === 'estimate') {
-          sourceLabel.textContent = 'Nguồn dinh dưỡng: AI ước tính';
-          sourceLabel.className = 'text-[11px] font-semibold text-neonAmber mt-1';
-          sourceNote.textContent = 'Có thể sai lệch; khẩu phần và nguyên liệu thực tế ảnh hưởng lớn đến calo.';
-        } else {
-          sourceLabel.textContent = 'Nguồn dinh dưỡng: theo thư viện FitScan';
-          sourceLabel.className = 'text-[11px] font-semibold text-neonCyan mt-1';
-          sourceNote.textContent = 'Dữ liệu thư viện cho khẩu phần chuẩn; không đảm bảo khớp hoàn toàn với phần ăn trong ảnh.';
-        }
-      }
       document.getElementById('scannedFoodImage').src = foodItem.img;
 
       document.getElementById('scannedCal').innerText = foodItem.calories;
